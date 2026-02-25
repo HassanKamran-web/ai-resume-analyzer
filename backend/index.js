@@ -9,7 +9,15 @@ const uploadRoutes = require('./routes/file.route');
 
 connectDB();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://ai-resume-analyzer-beta-dusky.vercel.app"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  })
+);
 app.use(express.json());
 app.use(express.static('public'));
 

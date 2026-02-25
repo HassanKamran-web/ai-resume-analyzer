@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+.inter-uniquifier{
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+/* add this in your global tailwind.css if animate-spin-slow not exist */
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 2s linear infinite;
+  }
+}

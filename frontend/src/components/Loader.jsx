@@ -5,8 +5,8 @@ const Loader = ({ target = 100 }) => {
 
   useEffect(() => {
     let start = 0;
-    const duration = 2000; // total animation duration in ms
-    const intervalTime = 20; // update interval
+    const duration = 2000;
+    const intervalTime = 20;
     const increment = target / (duration / intervalTime);
 
     const interval = setInterval(() => {

@@ -120,7 +120,11 @@ ${jobdescription}
             const cleanJson = aiRaw.slice(jsonStart, jsonEnd);
             parsed = JSON.parse(cleanJson);
         } catch (err) {
-            console.log("JSON parse error:", err.message);
+            console.error("Failed to parse AI response as JSON:", err);
+            return res.status(500).json({
+                message: "Error parsing AI response",
+                error: "Invalid JSON format from AI"
+            });
         }
 
         // 🔹 Ensure default arrays
@@ -133,6 +137,13 @@ ${jobdescription}
         let match = 0;
         if (totalSkills > 0) {
             match = Math.round((matchSkills.length / totalSkills) * 100);
+        }
+
+        const deleterewsume = await Resume.findByIdAndDelete(resumeId);
+        if (deleterewsume) {
+            fs.unlink(deleterewsume.filePath, (err) => {
+                if (err) console.error("Error deleting file:", err);
+            });
         }
 
         return res.status(200).json({

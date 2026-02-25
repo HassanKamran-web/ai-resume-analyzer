@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import CountUp from "react-countup";
 import MatchDisplay from '../components/MatchDisplay';
 
@@ -7,14 +7,18 @@ const ResultPage = () => {
   const [score, setscore] = useState(70)
   const [resumeData, setResumeData] = useState(null)
   const [jobDescription, setJobDescription] = useState(null)
+  const navigate = useNavigate()
   const location = useLocation();
-    const { analysisData } = location.state || {};
-      let color = "text-red-500"; // default low
+  const { analysisData } = location.state || {};
+  let color = "text-red-500"; // default low
   if (analysisData?.match >= 50 && analysisData?.match < 75) color = "text-yellow-500"; // medium
   if (analysisData?.match >= 75) color = "text-green-500"; // high
   return (
     <div className='p-4 bg-white inter-uniquifier '>
-      <h1 className='text-blue-500 text-3xl text-center text-semibold mb-4'>Result Page</h1>
+      <div className='flex items-center justify-start p-3'>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => navigate('/')}>Back</button>
+
+      </div>
       <div className='bg-[#E3E9F5] h-fit rounded-xl p-4 flex flex-col justify-center gap-4 '>
         <div className='grid lg:grid-cols-3 grid-cols-1 md:grid-cols-2 gap-4  '>
           <div className='p-4 shadow-md w-full min-h-64 h-full rounded-lg flex flex-col items-center  bg-white '>
@@ -31,9 +35,9 @@ const ResultPage = () => {
             <div className='px-4 text-sm h-full'>
               {
                 analysisData?.matchSkills && analysisData.matchSkills.length > 0 ? (
-                  <ul>
+                  <ul className='flex flex-wrap gap-3 list-decimal'>
                     {analysisData.matchSkills.map((skill, index) => (
-                      <li key={index}>{skill}</li>
+                      <li className='text-gray-500 ml-5' key={index}>{skill}</li>
                     ))}
                   </ul>
                 ) : (
@@ -50,9 +54,9 @@ const ResultPage = () => {
             <div className='px-4 text-sm flex'>
               {
                 analysisData?.missingSkills && analysisData.missingSkills.length > 0 ? (
-                  <ul>
+                  <ul className='flex flex-wrap gap-4 list-decimal'>
                     {analysisData.missingSkills.map((skill, index) => (
-                      <li className="mb-1" key={index}>{skill}</li>
+                      <li className=" text-gray-500 ml-5" key={index}>{skill}</li>
                     ))}
                   </ul>
                 ) : (

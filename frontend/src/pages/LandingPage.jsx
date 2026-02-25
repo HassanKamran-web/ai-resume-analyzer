@@ -27,7 +27,7 @@ const LandingPage = () => {
             }
 
             const formData = new FormData();
-            formData.append("resume", resume);  // ⚠️ name must match backend
+            formData.append("resume", resume); 
             formData.append("jobdescription", jobdescription);
 
             const response = await axios.post(
@@ -39,7 +39,6 @@ const LandingPage = () => {
                     },
                 }
             );
-            console.log(response.data);
             if (response.status === 200) {
                 try {
                     if (!response.data.resumeId) {
@@ -50,7 +49,6 @@ const LandingPage = () => {
                         toast.error('Job description is empty. Please provide a job description for analysis.');
                         return;
                     }
-                    console.log('Resume uploaded successfully, analyzing now...');
                     const analysisResponse = await axios.post(
                         `${import.meta.env.VITE_BASE_URL}/api/analyze/${response.data.resumeId}`,
                         {
@@ -60,7 +58,6 @@ const LandingPage = () => {
 
                     if (analysisResponse.status === 200) {
                         toast.success('Resume analyzed successfully!');
-                        console.log(analysisResponse.data);
                         navigate(`/result/${response.data.resumeId}`, { state: { analysisData: analysisResponse.data } });
 
                     }

@@ -16,51 +16,45 @@ const client = new OpenAI({
 const uploadresume = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
+            return res.status(400).json({ message: "No file uploaded" });
         }
-
 
         const ext = path.extname(req.file.originalname).toLowerCase();
 
-        if (ext === '.pdf') {
-            const dataBuffer = fs.readFileSync(req.file.path);
-            const data = await pdf(dataBuffer);
+        let extractedText = "";
 
-            const ResumeData = await Resume.create({
-                originalFilename: req.file.originalname,
-                filePath: req.file.path,
-                extractedText: data.text
-            });
+        if (ext === ".pdf") {
+            const data = await pdf(req.file.buffer);
+            extractedText = data.text;
 
-            return res.status(200).json({
-                message: 'File uploaded successfully',
-                resumeId: ResumeData._id,
-            });
-
-        } else if (ext === '.docx') {
-
+        } else if (ext === ".docx") {
             const result = await mammoth.extractRawText({
-                path: req.file.path
+                buffer: req.file.buffer
             });
+            extractedText = result.value;
 
-            const ResumeData = await Resume.create({
-                originalFilename: req.file.originalname,
-                filePath: req.file.path,
-                extractedText: result.value
-            });
-
-
-            return res.status(200).json({
-                message: 'File uploaded successfully',
-                resumeId: ResumeData._id,
+        } else {
+            return res.status(400).json({
+                message: "Invalid file type. Only PDF and DOCX allowed."
             });
         }
-        else {
-            return res.status(400).json({ message: 'Invalid file type. Only PDF and DOCX are allowed.' });
-        }
+
+        const ResumeData = await Resume.create({
+            originalFilename: req.file.originalname,
+            extractedText
+        });
+
+        return res.status(200).json({
+            message: "File uploaded successfully",
+            resumeId: ResumeData._id
+        });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error uploading file', error: error.message });
+        console.error(error);
+        res.status(500).json({
+            message: "Error uploading file",
+            error: error.message
+        });
     }
 };
 
@@ -78,7 +72,7 @@ const analyzeResume = async (req, res) => {
         const resume = await Resume.findById(resumeId);
         if (!resume) return res.status(404).json({ message: "Resume not found" });
 
-        // 🔥 Strict JSON Prompt
+        //  Strict JSON Prompt
         const prompt = `
 You are a professional ATS system.
 
@@ -139,12 +133,7 @@ ${jobdescription}
             match = Math.round((matchSkills.length / totalSkills) * 100);
         }
 
-        const deleterewsume = await Resume.findByIdAndDelete(resumeId);
-        if (deleterewsume) {
-            fs.unlink(deleterewsume.filePath, (err) => {
-                if (err) console.error("Error deleting file:", err);
-            });
-        }
+        await Resume.findByIdAndDelete(resumeId);
 
         return res.status(200).json({
             message: "Resume analyzed successfully",

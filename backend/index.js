@@ -12,7 +12,7 @@ connectDB();
 app.use(
   cors({
     origin: [
-      "https://ai-resume-analyzer-beta-dusky.vercel.app"
+      "https://ai-resume-analyzer-beta-dusky.vercel.app",
     ],
     methods: ["GET", "POST"],
     credentials: true

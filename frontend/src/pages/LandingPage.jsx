@@ -114,7 +114,8 @@ const LandingPage = () => {
                 toast.error('Failed to upload resume. Please try again.');
             }
         } catch (err) {
-            toast.error('Something went wrong while analyzing the resume. Please try again later.', err.message);
+            console.error(err.response?.data || err);
+            toast.error(err.response?.data?.message || "Server Error");
         } finally {
             setLoading(false);
         }

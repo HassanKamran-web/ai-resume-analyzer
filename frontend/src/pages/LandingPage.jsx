@@ -11,7 +11,51 @@ const LandingPage = () => {
     const [docxHtml, setDocxHtml] = useState(null);
     const [jobdescription, setJobdescription] = useState('')
     const [loading, setLoading] = useState(false)
+    const [dragActive, setDragActive] = useState(false);
     const navigate = useNavigate();
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setDragActive(true);
+    };
+
+    const handleDragLeave = () => {
+        setDragActive(false);
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        setDragActive(false);
+
+        const file = e.dataTransfer.files[0];
+
+        if (!file) return;
+
+        if (file.size > 2097152) {
+            toast.error('File size exceeds 2MB limit.');
+            return;
+        }
+
+        if (
+            file.type !== 'application/pdf' &&
+            file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ) {
+            toast.error('Please provide pdf or docx file only.');
+            return;
+        }
+
+        setResume(file);
+
+        if (file.type === "application/pdf") {
+            const fileURL = URL.createObjectURL(file);
+            setPreviewUrl(fileURL);
+            setDocxHtml(null);
+        }
+
+        if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            setDocxHtml('./docx.png');
+            setPreviewUrl(null);
+        }
+    };
     const Submithandler = async (e) => {
 
         try {
@@ -27,7 +71,7 @@ const LandingPage = () => {
             }
 
             const formData = new FormData();
-            formData.append("resume", resume); 
+            formData.append("resume", resume);
             formData.append("jobdescription", jobdescription);
 
             const response = await axios.post(
@@ -71,7 +115,7 @@ const LandingPage = () => {
             }
         } catch (err) {
             toast.error('Something went wrong while analyzing the resume. Please try again later.', err.message);
-        } finally{
+        } finally {
             setLoading(false);
         }
     }
@@ -91,7 +135,13 @@ const LandingPage = () => {
                     </div>
 
                     <form onSubmit={(e) => { Submithandler(e) }} className='flex flex-col w-fit items-center justify-center gap-5' action="">
-                        <div className='w-fit flex max-h-80 select-none flex-col items-center justify-around gap-4 border-blue-500 border-2 rounded-lg py-5  px-4 backdrop-blur-sm bg-blue-500/10 font-uniquifier'>
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`w-full sm:w-fit flex max-h-80 select-none flex-col items-center justify-around gap-4 border-blue-500 border-2 rounded-lg py-5 px-4 backdrop-blur-sm font-uniquifier transition-all
+${dragActive ? "bg-blue-500/20 scale-[1.02]" : "bg-blue-500/10"}`}
+                        >
                             {previewUrl && (
                                 <div className="mt-6 overflow-hidden">
                                     <iframe

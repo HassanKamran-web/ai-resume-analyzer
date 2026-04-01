@@ -14,21 +14,21 @@ const ResultPage = () => {
   if (analysisData?.match >= 50 && analysisData?.match < 75) color = "text-yellow-500"; // medium
   if (analysisData?.match >= 75) color = "text-green-500"; // high
   return (
-    <div className='p-4 bg-white inter-uniquifier '>
+    <div className='p-4  bg-[#0a0a0a] inter-uniquifier '>
       <div className='flex items-center justify-start p-3'>
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => navigate('/')}>Back</button>
 
       </div>
-      <div className='bg-[#E3E9F5] h-fit rounded-xl p-4 flex flex-col justify-center gap-4 '>
+      <div className=' bg-[#0a0a0a] h-fit rounded-xl p-4 flex flex-col justify-center gap-4 '>
         <div className='grid lg:grid-cols-3 grid-cols-1 md:grid-cols-2 gap-4  '>
-          <div className='p-4 shadow-md w-full min-h-64 h-full rounded-lg flex flex-col items-center  bg-white '>
+          <div className='p-4 shadow-md w-full min-h-64 h-full rounded-lg flex flex-col items-center  bg-zinc-900 '>
             <div>
               <h3 className='font-bold text-xl text-green-500'>Score</h3>
             </div>
             <MatchDisplay match={analysisData?.match || 0} />
           </div>
 
-          <div className='p-4 shadow-md w-full min-h-64 h-full rounded-lg bg-white '>
+          <div className='p-4 shadow-md w-full min-h-64 h-full rounded-lg  bg-zinc-900 '>
             <div>
               <h3 className='font-bold text-xl mb-11 text-blue-500 '>Matching Skills{analysisData?.matchSkills?.length > 0 ? ` (${analysisData.matchSkills.length})` : ''}</h3>
             </div>
@@ -47,7 +47,7 @@ const ResultPage = () => {
             </div>
           </div>
 
-          <div className='p-4 shadow-md  w-full min-h-64 h-full rounded-lg bg-white '>
+          <div className='p-4 shadow-md  w-full min-h-64 h-full rounded-lg bg-zinc-900 '>
             <div>
               <h3 className='font-bold text-xl mb-11 text-red-500 '>Missing Skills{analysisData?.missingSkills?.length > 0 ? ` (${analysisData.missingSkills.length})` : ''}</h3>
             </div>
@@ -67,9 +67,19 @@ const ResultPage = () => {
           </div>
         </div>
 
-        <div className='p-4 shadow-md  min-h-64 h-full rounded-lg bg-white '>
-          <h3 className='font-bold text-2xl mb-6'>AI Suggestion for Optimize Resume</h3>
-          <p className='text-gray-400 text-lg'>{analysisData?.suggestions || "No suggestions available."}</p>
+        <div className='p-4 shadow-md  min-h-64 h-full rounded-lg bg-zinc-900 '>
+          <h3 className='font-bold text-white text-2xl mb-6'>AI Suggestion for Optimize Resume</h3>
+          <div className="space-y-3">
+            {analysisData?.suggestions && analysisData.suggestions.length > 0 ? (
+              analysisData.suggestions.map((item, index) => (
+                <p key={index} className="text-gray-400 text-lg flex items-start gap-2">
+                  <span className="text-blue-500 mt-1.5">•</span> {item}
+                </p>
+              ))
+            ) : (
+              <p className="text-gray-500 text-lg italic">No suggestions available.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

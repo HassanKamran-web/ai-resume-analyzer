@@ -1,212 +1,210 @@
-import React, { useState } from 'react'
-import toast from 'react-hot-toast'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
-import mammoth from "mammoth";
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion'; // Animations ke liye
 import Loader from '../components/Loader';
+import { FiUploadCloud, FiFileText, FiCheckCircle } from 'react-icons/fi'; // Icons use karein
 
 const LandingPage = () => {
     const [resume, setResume] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [docxHtml, setDocxHtml] = useState(null);
-    const [jobdescription, setJobdescription] = useState('')
-    const [loading, setLoading] = useState(false)
+    const [jobdescription, setJobdescription] = useState('');
+    const [loading, setLoading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const navigate = useNavigate();
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        setDragActive(true);
-    };
 
-    const handleDragLeave = () => {
-        setDragActive(false);
-    };
-
-    const handleDrop = async (e) => {
-        e.preventDefault();
-        setDragActive(false);
-
-        const file = e.dataTransfer.files[0];
-
+    // --- Logic Functions (Wahi hain jo tumhare paas thin) ---
+    const handleFileProcessing = (file) => {
         if (!file) return;
-
         if (file.size > 2097152) {
             toast.error('File size exceeds 2MB limit.');
             return;
         }
-
-        if (
-            file.type !== 'application/pdf' &&
-            file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ) {
-            toast.error('Please provide pdf or docx file only.');
+        const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Please provide PDF or DOCX file only.');
             return;
         }
 
         setResume(file);
-
         if (file.type === "application/pdf") {
-            const fileURL = URL.createObjectURL(file);
-            setPreviewUrl(fileURL);
+            setPreviewUrl(URL.createObjectURL(file));
             setDocxHtml(null);
-        }
-
-        if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        } else {
             setDocxHtml('./docx.png');
             setPreviewUrl(null);
         }
     };
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+        else if (e.type === "dragleave") setDragActive(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleFileProcessing(e.dataTransfer.files[0]);
+        }
+    };
+
     const Submithandler = async (e) => {
+        e.preventDefault();
+        if (!resume || !jobdescription.trim()) {
+            toast.error('Please upload resume and enter job description.');
+            return;
+        }
 
         try {
-            e.preventDefault();
-            setLoading(true)
-            if (!resume) {
-                toast.error('Please upload a resume before analyzing.');
-                return;
-            }
-            if (!jobdescription.trim()) {
-                toast.error('Please enter a job description.');
-                return;
-            }
-
+            setLoading(true);
             const formData = new FormData();
             formData.append("resume", resume);
             formData.append("jobdescription", jobdescription);
 
-            const response = await axios.post(
-                `${import.meta.env.VITE_BASE_URL}/api/upload`,
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
+            const uploadRes = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/upload`, formData);
+            
+            const analysisRes = await axios.post(
+                `${import.meta.env.VITE_BASE_URL}/api/analyze/${uploadRes.data.resumeId}`,
+                { jobdescription }
             );
-            if (response.status === 200) {
-                try {
-                    if (!response.data.resumeId) {
-                        toast.error('Resume uploaded but failed to retrieve resume ID for analysis.');
-                        return;
-                    }
-                    if (!jobdescription.trim()) {
-                        toast.error('Job description is empty. Please provide a job description for analysis.');
-                        return;
-                    }
-                    const analysisResponse = await axios.post(
-                        `${import.meta.env.VITE_BASE_URL}/api/analyze/${response.data.resumeId}`,
-                        {
-                            jobdescription: jobdescription
-                        }
-                    );
 
-                    if (analysisResponse.status === 200) {
-                        toast.success('Resume analyzed successfully!');
-                        navigate(`/result/${response.data.resumeId}`, { state: { analysisData: analysisResponse.data } });
-
-                    }
-
-                } catch (err) {
-                    toast.error('Failed to analyze resume.');
-                }
-            }
-            else {
-                toast.error('Failed to upload resume. Please try again.');
-            }
+            toast.success('Analysis Complete!');
+            navigate(`/result/${uploadRes.data.resumeId}`, { state: { analysisData: analysisRes.data } });
         } catch (err) {
-            toast.error('Something went wrong while analyzing the resume. Please try again later.', err.message);
+            const msg = err.response?.data?.message || "Analysis failed. Please check your credits.";
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     return (
-        <section className=' w-full '>
+        <section className="min-h-screen w-full bg-[#0a0a0a] text-white overflow-x-hidden font-sans">
             {loading && <Loader />}
-            <div className="inter-uniquifier py-3 px-4 w-full flex flex-col gap-8 items-center justify-center  ">
-                <h3 className='text-blue-500 uppercase font-bold text-sm lg:text-3xl select-none'>Resume Analyzer</h3>
 
+            {/* Background Decor */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+            </div>
 
-                <div className='w-full flex lg:flex-row flex-col items-center p-6 gap-8 h-full  '>
-                    <div className='flex flex-col lg:gap-6 gap-4 h-full lg:px-6 select-none'>
-                        <h2 className='inter-uniquifer text-xl lg:text-4xl font-bold text-center lg:text-start '>AI-Powered Resume Analyzer for Smart Job Applications</h2>
-                        <p className='inter-uniquifer max-w-3xl text-gray-400 text-xs text-center lg:text-start lg:text-xl'>Upload your resume and compare it instantly with any job description using advanced AI analysis. Get a detailed match score, discover missing skills, and receive actionable suggestions to improve your chances of getting hired.</p>
+            <div className="max-w-7xl mx-auto px-4 py-12 lg:py-20 flex flex-col ">
+                
+                {/* Header Section */}
+                <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16 flex flex-col items-center "
+                >
+                    <span className="bg-blue-500/10 text-blue-400 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wider uppercase">
+                        AI Resume Insights
+                    </span>
+                    <h1 className=" text-4xl lg:text-6xl font-extrabold tracking-tight bg-lineart-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                        Master Your Next <br /> Job Application
+                    </h1>
+                    <p className=" text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                        Instant AI analysis that compares your resume with job descriptions. 
+                        Get match scores and actionable feedback in seconds.
+                    </p>
+                </motion.div>
 
-                    </div>
-
-                    <form onSubmit={(e) => { Submithandler(e) }} className='flex flex-col w-fit items-center justify-center gap-5' action="">
+                <div className="w-full grid lg:grid-cols-2 gap-12 items-start">
+                    
+                    {/* Left: Upload Area */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="space-y-6"
+                    >
                         <div
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
+                            onDragEnter={handleDrag}
+                            onDragOver={handleDrag}
+                            onDragLeave={handleDrag}
                             onDrop={handleDrop}
-                            className={`w-full sm:w-fit flex max-h-80 select-none flex-col items-center justify-around gap-4 border-blue-500 border-2 rounded-lg py-5 px-4 backdrop-blur-sm font-uniquifier transition-all
-${dragActive ? "bg-blue-500/20 scale-[1.02]" : "bg-blue-500/10"}`}
+                            className={`relative group cursor-pointer border-2 border-dashed transition-all duration-300 rounded-3xl p-10 flex flex-col items-center justify-center min-h-87.5
+                                ${dragActive ? "border-blue-500 bg-blue-500/10 scale-95" : "border-gray-700 bg-gray-900/50 hover:border-gray-500"}`}
                         >
-                            {previewUrl && (
-                                <div className="mt-6 overflow-hidden">
-                                    <iframe
-                                        src={`${previewUrl}#toolbar=0&navpanes=0`}
-                                        title="PDF Preview"
-                                        className="w-25 h-fit rounded-lg border"
-                                    />
-                                </div>
-                            )}
+                            <input 
+                                type="file" 
+                                id="resume-upload" 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onChange={(e) => handleFileProcessing(e.target.files[0])}
+                                accept=".pdf,.docx"
+                            />
+                            
+                            <AnimatePresence mode="wait">
+                                {resume ? (
+                                    <motion.div 
+                                        key="file-selected"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="flex flex-col items-center text-center"
+                                    >
+                                        <div className="w-20 h-20 bg-green-500/20 rounded-2xl flex items-center justify-center mb-4">
+                                            <FiCheckCircle className="text-green-400 text-4xl" />
+                                        </div>
+                                        <p className="font-semibold text-lg">{resume.name}</p>
+                                        <p className="text-gray-500 text-sm mt-1">{(resume.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        <button className="mt-4 text-sm text-blue-400 hover:underline">Change File</button>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div 
+                                        key="empty"
+                                        className="flex flex-col items-center text-center"
+                                    >
+                                        <div className="w-20 h-20 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                            <FiUploadCloud className="text-blue-500 text-4xl" />
+                                        </div>
+                                        <h3 className="text-xl font-bold">Upload Resume</h3>
+                                        <p className="text-gray-500 mt-2 max-w-62.5">
+                                            Drag & drop your PDF or DOCX here (Max 2MB)
+                                        </p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
 
-                            {docxHtml && (
-                                <div
-                                    className="mt-6 w-25 h-25 bg-white p-4 rounded-lg border overflow-hidden"
-
-                                >
-                                    <img className='h-full w-full object-cover' src={docxHtml} alt="docx" />
-                                </div>
-                            )}
-                            <p className='lg:text-sm text-xs text-gray-400'>Drop your resume here or choose a file PDF & DOCX only. Max 2MB file size.</p>
-                            <input type="file" className="hidden" id="resume-upload" name='resume-upload' accept=".pdf,.docx" onChange={async (e) => {
-                                const file = e.target.files[0];
-
-                                if (!file) return;
-
-                                if (file.size > 2097152) {
-                                    toast.error('File size exceeds 2MB limit.');
-                                    return;
-                                }
-
-                                if (
-                                    file.type !== 'application/pdf' &&
-                                    file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                ) {
-                                    toast.error('Please provide pdf or docx file only.');
-                                    return;
-                                }
-
-                                setResume(file);
-
-                                if (file.type === "application/pdf") {
-                                    const fileURL = URL.createObjectURL(file);
-                                    setPreviewUrl(fileURL);
-                                    setDocxHtml(null);
-                                }
-
-                                if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-
-                                    setDocxHtml('./docx.png');
-                                    setPreviewUrl(null);
-                                }
-                            }} />
-                            <label htmlFor="resume-upload" className='cursor-pointer text-white bg-blue-500 rounded-lg hover:bg-blue-600 w-full text-sm lg:text-md inter-uniquifier py-2 px-4 transition-colors text-center '>Upload Resume</label>
+                    {/* Right: Input Area */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="space-y-6"
+                    >
+                        <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-3xl backdrop-blur-md">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-400 mb-4">
+                                <FiFileText /> Job Description
+                            </label>
+                            <textarea 
+                                value={jobdescription} 
+                                onChange={(e) => setJobdescription(e.target.value)}
+                                placeholder="Paste the job description you're targeting..."
+                                className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-gray-600 outline-none resize-none min-h-50"
+                            />
                         </div>
 
-                        <textarea value={jobdescription} onChange={(e) => setJobdescription(e.target.value)} rows="5" cols="40" className='border-2 border-gray-300 resize-none overflow-y-auto p-3 rouned-xl overflow-hidden w-full focus:outline-blue-500' name="jobDescription" id="jobDescription" placeholder="Paste job description here..."></textarea>
-                        <button className='bg-blue-500 text-white w-full inter-uniquifier py-2 lg:text-lg text-sm px-4 rounded-lg hover:bg-blue-600 transition-colors'>Analyze Resume</button>
-
-                    </form>
-
+                        <motion.button 
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={Submithandler}
+                            className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-3"
+                        >
+                            Start AI Analysis
+                        </motion.button>
+                    </motion.div>
 
                 </div>
-
             </div>
         </section>
-    )
-}
+    );
+};
 
-export default LandingPage
+export default LandingPage;

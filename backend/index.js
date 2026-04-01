@@ -13,6 +13,7 @@ app.use(
   cors({
     origin: [
       "https://ai-resume-analyzer-beta-dusky.vercel.app",
+      "http://localhost:5173",
     ],
     methods: ["GET", "POST"],
     credentials: true

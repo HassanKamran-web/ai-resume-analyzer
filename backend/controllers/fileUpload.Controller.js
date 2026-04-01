@@ -9,8 +9,8 @@ const fileUploadRoutes = require('../routes/file.route');
 const Resume = require('../models/resume.model');
 const OpenAI = require('openai');
 const client = new OpenAI({
-    baseURL: "https://router.huggingface.co/v1",
     apiKey: process.env.HF_TOKEN,
+    baseURL: "https://api.groq.com/openai/v1",
 });
 
 const uploadresume = async (req, res) => {
@@ -74,37 +74,40 @@ const analyzeResume = async (req, res) => {
 
         //  Strict JSON Prompt
         const prompt = `
-You are a professional ATS system.
+    You are a professional ATS system expert.
+    Compare the resume with the job description.
 
-Compare the resume with the job description.
+    STRICT RULES:
+    1. Return ONLY valid JSON.
+    2. suggestions MUST be an array of at least 3 actionable tips to improve the match score.
+    3. If the resume is already good, suggest advanced certifications or specific project improvements.
 
-Return ONLY valid JSON.
-Do NOT return explanation or text outside JSON.
+    Return in this exact structure:
+    {
+    "matchedpercentage": number,
+    "matchedSkills": ["skill1", "skill2"],
+    "missingSkills": ["skill1", "skill2"],
+    "suggestions": ["suggestion1", "suggestion2"]
+    }
 
-Return in this exact structure:
-{
-  "matchedpercentage": 0,
-  "matchedSkills": [],
-  "missingSkills": [],
-  "suggestions": []
-}
+    Resume:
+    ${resume.extractedText}
 
-Include all technical and soft skills.
-Be strict and realistic.
-
-Resume:
-${resume.extractedText}
-
-Job Description:
-${jobdescription}
+    Job Description:
+    ${jobdescription}
 `;
 
         const response = await client.chat.completions.create({
-            model: "moonshotai/Kimi-K2-Instruct-0905",
-            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.1-8b-instant",
+            response_format: { type: "json_object" },
+            messages: [
+                { role: "system", content: "You are a helpful assistant that outputs JSON." },
+                { role: "user", content: prompt }
+            ],
         });
 
         const aiRaw = response.choices[0].message.content.trim();
+        
 
         // 🔹 Safe JSON parsing (ignore extra text)
         let parsed = { matchedSkills: [], missingSkills: [], suggestions: [] };
